@@ -106,9 +106,13 @@ def train_forecasting_model():
         "n_samples": len(X)
     }
     
-    joblib.dump(model_data, MODEL_FILE)
-    print(f"[ML Model] Successfully trained model on {len(X)} samples. RMSEs for 1-6h: {rmses}")
-    return True
+    try:
+        joblib.dump(model_data, MODEL_FILE)
+        print(f"[ML Model] Successfully trained model on {len(X)} samples. RMSEs for 1-6h: {rmses}")
+        return True
+    except Exception as e:
+        print(f"[ML Model] Failed to save trained model to disk (possibly read-only filesystem): {e}")
+        return False
 
 def predict_forecast():
     """
