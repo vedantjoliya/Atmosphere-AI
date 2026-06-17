@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Atmosphere-AI: A professional-grade IoT dashboard providing real-time air quality monitoring, live weather data, and machine learning based AQI forecasts.">
+  <title>Atmosphere-AI | IoT Environmental Dashboard</title>
+  <link rel="icon" type="image/png" href="/static/AI.png">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  
+  <!-- Plotly.js CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="h-full min-h-screen flex flex-col bg-[#f6f8fb] text-slate-800 antialiased">
+
+  <!-- Main Container -->
+  <div class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+    
+    <!-- Top Header Bar -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div class="flex items-center gap-3">
+        <!-- Main Logo Glow Icon -->
+        <img src="/static/AI.png" alt="Atmosphere-AI Logo" class="w-16 h-16 object-contain">
+        <div>
+          <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent font-display">
+            Atmosphere-AI
+          </h1>
+          <p id="app-subtitle" class="text-xs md:text-sm text-slate-500 font-medium font-sans">
+            IoT Environmental Analytics & ML forecasting
+          </p>
+        </div>
+      </div>
+      
+      <!-- Live Location Indicator -->
+      <div class="glass-panel py-2 px-4 flex flex-col items-end border border-slate-200/50 min-w-[180px]">
+        <div class="flex items-center gap-1.5">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span id="device-name-display" class="text-xs font-bold text-slate-700 font-display">
+            ADMIN BLOCK DEVICE
+          </span>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5 text-[10px] text-slate-500 font-medium">
+          <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+          <span id="weather-city">Detecting Location...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Bento Grid Section -->
+    <main class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow">
+      
+      <!-- Column 1: AQI Ring & Level Details (Span 4) -->
+      <section class="col-span-1 md:col-span-4 flex flex-col gap-6">
+        
+        <!-- AQI Meter Panel -->
+        <div class="glass-panel p-6 flex flex-col items-center justify-center relative overflow-hidden aqi-glow-border border">
+          <!-- Dial Ring -->
+          <div class="aqi-ring-container flex items-center justify-center">
+            <svg class="aqi-ring-svg" width="200" height="200">
+              <circle class="aqi-ring-bg" cx="100" cy="100" r="70"></circle>
+              <circle id="aqi-gauge-ring" class="aqi-ring-fg" cx="100" cy="100" r="70" stroke-dasharray="440" stroke-dashoffset="440"></circle>
+            </svg>
+            <div class="aqi-pulse-circle"></div>
+            <!-- Center Text -->
+            <div class="absolute flex flex-col items-center justify-center">
+              <span id="aqi-value-text" class="text-5xl font-extrabold tracking-tight font-display text-slate-900 aqi-text-glow">--</span>
+              <span class="text-[10px] font-bold tracking-widest text-slate-500 uppercase">AQI INDEX</span>
+            </div>
+          </div>
+          
+          <!-- State Label -->
+          <div class="mt-4 text-center">
+            <span id="aqi-level-label" class="text-xl font-bold tracking-tight font-display transition-colors duration-500">
+              --
+            </span>
+          </div>
+        </div>
+
+        <!-- AQI Advice / Guidance Panel -->
+        <div class="glass-panel p-6 flex-grow flex flex-col justify-center gap-3">
+          <div class="flex items-center gap-2 text-slate-500">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-sky-500"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider">Health Advisory</h3>
+          </div>
+          <p id="aqi-level-desc" class="text-sm text-slate-650 leading-relaxed font-sans font-normal">
+            Fetching local air quality data to provide real-time recommendations.
+          </p>
+        </div>
+      </section>
+
+      <!-- Column 2: Dashboard Statistics, Weather & Control Panel (Span 8) -->
+      <section class="col-span-1 md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        
+        <!-- Real-Time Metrics Summary -->
+        <div class="glass-panel p-6 col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
+          <!-- PM2.5 Metric -->
+          <div class="flex flex-col border-b sm:border-b-0 sm:border-r border-slate-200/80 pb-4 sm:pb-0 pr-0 sm:pr-4 justify-between min-h-[90px]">
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <i data-lucide="activity" class="w-4 h-4 text-emerald-500"></i>
+              <span id="lbl-pm25" class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">PM2.5</span>
+            </div>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="val-pm25" class="text-2xl sm:text-3xl font-extrabold font-display text-slate-800">--</span>
+              <span id="val-pm25-unit" class="text-xs text-slate-500">μg/m³</span>
+            </div>
+          </div>
+          
+          <!-- PM10 Metric -->
+          <div class="flex flex-col border-b sm:border-b-0 sm:border-r border-slate-200/80 pb-4 sm:pb-0 px-0 sm:px-4 justify-between min-h-[90px]">
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <i data-lucide="layers" class="w-4 h-4 text-sky-500"></i>
+              <span id="lbl-pm10" class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">PM10</span>
+            </div>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="val-pm10" class="text-2xl sm:text-3xl font-extrabold font-display text-slate-800">--</span>
+              <span id="val-pm10-unit" class="text-xs text-slate-500">μg/m³</span>
+            </div>
+          </div>
+
+          <!-- CO2 Metric -->
+          <div class="flex flex-col pl-0 sm:pl-4 justify-between min-h-[90px]">
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <i data-lucide="gauge" class="w-4 h-4 text-purple-500"></i>
+              <span id="lbl-co2" class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">CO2 Level</span>
+            </div>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="val-co2" class="text-2xl sm:text-3xl font-extrabold font-display text-slate-800">--</span>
+              <span class="text-[10px] sm:text-xs text-slate-500">ppm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auxiliary Ambient metrics: Temperature & Humidity -->
+        <div class="glass-panel p-6 flex flex-col gap-4">
+          <!-- Temperature Section -->
+          <div class="flex items-center justify-between gap-4 pb-4 border-b border-slate-200/60">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="thermometer" class="w-5 h-5 text-orange-500"></i>
+              </div>
+              <div>
+                <span id="lbl-temp" class="text-xs text-slate-500 block font-semibold">Temperature</span>
+                <span id="val-temp" class="text-2xl font-extrabold font-display text-slate-800">--</span>
+              </div>
+            </div>
+            <!-- Temperature Sparkline -->
+            <div id="temp-sparkline" class="w-32 h-10 opacity-80 flex-shrink-0"></div>
+          </div>
+
+          <!-- Humidity Section -->
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="droplets" class="w-5 h-5 text-blue-500"></i>
+              </div>
+              <div>
+                <span id="lbl-humidity" class="text-xs text-slate-500 block font-semibold">Humidity</span>
+                <span id="val-humidity" class="text-2xl font-extrabold font-display text-slate-800">--</span>
+              </div>
+            </div>
+            <!-- Humidity Sparkline -->
+            <div id="humidity-sparkline" class="w-32 h-10 opacity-80 flex-shrink-0"></div>
+          </div>
+        </div>
+
+        <!-- Weather Widget Panel -->
+        <div class="glass-panel p-6 flex flex-col justify-between relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 id="weather-header" class="text-xs font-bold uppercase tracking-wider text-slate-500">Local Weather</h3>
+              <span id="weather-temp" class="text-3xl font-extrabold font-display block text-slate-800 mt-1">--</span>
+              <span id="weather-desc" class="text-xs text-slate-500 capitalize block mt-0.5">--</span>
+            </div>
+            <img id="weather-icon" src="" alt="Weather" class="w-12 h-12 -mt-2">
+          </div>
+          <div class="flex gap-4 mt-4 text-[10px] md:text-xs font-semibold text-slate-600 border-t border-slate-200/80 pt-3">
+            <div class="flex items-center gap-1">
+              <i data-lucide="wind" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span id="weather-wind">--</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <i data-lucide="umbrella" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span id="weather-humidity">--</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <i data-lucide="compass" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span id="weather-pressure">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control override panel / Settings -->
+        <div class="glass-panel p-6 col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 border border-slate-200/50 bg-white/30">
+          
+          <!-- Metric Scale Selector -->
+          <div class="flex flex-col gap-2">
+            <label id="lbl-scale" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Display Metric</label>
+            <div class="flex rounded-md overflow-hidden bg-slate-200/40 p-0.5 border border-slate-300/30">
+              <button data-scale="aqi" id="opt-scale-aqi" class="toggle-btn flex-1 py-1 text-xs rounded font-semibold transition-all">EPA AQI Index</button>
+              <button data-scale="conc" id="opt-scale-conc" class="toggle-btn flex-1 py-1 text-xs rounded font-semibold transition-all">Concentration</button>
+            </div>
+          </div>
+
+          <!-- Unit Selector -->
+          <div class="flex flex-col gap-2">
+            <label id="lbl-units" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Unit System</label>
+            <div class="flex rounded-md overflow-hidden bg-slate-200/40 p-0.5 border border-slate-300/30">
+              <button data-unit="metric" id="opt-unit-metric" class="toggle-btn flex-1 py-1 text-xs rounded font-semibold transition-all">Metric</button>
+              <button data-unit="imperial" id="opt-unit-imp" class="toggle-btn flex-1 py-1 text-xs rounded font-semibold transition-all">Imperial</button>
+            </div>
+          </div>
+
+          <!-- Language Selector -->
+          <div class="flex flex-col gap-2">
+            <label id="lbl-lang" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Language</label>
+            <select id="lang-select" class="glass-input w-full text-xs font-semibold py-1.5 bg-white/60 border border-slate-300/30 text-slate-700 outline-none rounded-md cursor-pointer">
+              <option value="en">English (EN)</option>
+              <option value="es">Español (ES)</option>
+              <option value="fr">Français (FR)</option>
+              <option value="de">Deutsch (DE)</option>
+              <option value="it">Italiano (IT)</option>
+              <option value="pt">Português (PT)</option>
+              <option value="hi">हिन्दी (HI)</option>
+              <option value="zh">中文 (ZH)</option>
+            </select>
+          </div>
+
+          <!-- Location Cities Selector -->
+          <div class="flex flex-col gap-2">
+            <label id="lbl-location" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Location</label>
+            <div class="flex gap-2">
+              <select id="city-select" class="glass-input w-full text-xs font-semibold py-1.5 bg-white/60 border border-slate-300/30 text-slate-700 outline-none rounded-md cursor-pointer">
+                <!-- Cities populated dynamically by JS -->
+              </select>
+              <button id="btn-geo-detect" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 active:bg-slate-250 text-slate-700 rounded-md border border-slate-200 shadow-sm transition-all flex items-center justify-center flex-shrink-0" title="Detect Geolocation">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          
+        </div>
+
+      </section>
+
+      <!-- Row 3: Graphs (Span 12) -->
+      <!-- Real-Time Trend Charts -->
+      <section class="col-span-1 md:col-span-6 glass-panel p-6 flex flex-col gap-4 min-h-[350px]">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="line-chart" class="w-5 h-5 text-emerald-500"></i>
+            <h2 id="realtime-header" class="text-sm font-bold uppercase tracking-wider text-slate-700">Real-Time Air Quality</h2>
+          </div>
+          <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
+        <div class="flex-grow w-full relative">
+          <!-- Plotly Div -->
+          <div id="realtime-chart" class="w-full h-full min-h-[260px]"></div>
+        </div>
+      </section>
+
+      <!-- Predictive ML Forecast Charts -->
+      <section class="col-span-1 md:col-span-6 glass-panel p-6 flex flex-col gap-4 min-h-[350px]">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div>
+            <h2 id="predict-header" class="text-sm font-bold uppercase tracking-wider text-slate-700">Predictive Insights (6-Hour AQI Forecast)</h2>
+            <p id="predict-subtitle" class="text-[10px] text-slate-500 block mt-0.5">scikit-learn Linear Regression model</p>
+          </div>
+          <button id="retrain-btn" class="px-3 py-1 bg-white hover:bg-slate-50 active:bg-slate-100 text-[10px] font-bold tracking-wider uppercase rounded-md border border-slate-200 shadow-sm transition-all text-slate-600">
+            Retrain Model
+          </button>
+        </div>
+        
+        <div class="flex-grow w-full relative">
+          <!-- Plotly Div -->
+          <div id="forecast-chart" class="w-full h-full min-h-[220px]"></div>
+        </div>
+        
+        <!-- Model details metadata footer -->
+        <div class="flex items-center justify-between text-[10px] text-slate-500 mt-2 border-t border-slate-200 pt-2">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="cpu" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span id="model-info-text">Initial forecast (generating database history...)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Logs Section -->
+      <section class="col-span-full glass-panel p-6 flex flex-col gap-4 min-h-[250px]">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="terminal" class="w-5 h-5 text-indigo-500 animate-pulse"></i>
+            <h2 id="logs-header" class="text-sm font-bold uppercase tracking-wider text-slate-700">Live IoT Pipeline & Sensor Logs</h2>
+          </div>
+          <span class="text-[10px] bg-indigo-500/10 text-indigo-600 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Active Polling</span>
+        </div>
+        <div class="flex-grow w-full relative">
+          <!-- Scrollable Log History Container -->
+          <div id="system-logs-container" class="w-full h-48 bg-slate-950 text-slate-300 p-4 rounded-lg font-mono text-xs overflow-y-auto leading-relaxed shadow-inner border border-slate-800 flex flex-col gap-1">
+            <div class="text-slate-500">// Waiting for logs to stream from backend...</div>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-[10px] text-slate-500 mt-auto pt-6 border-t border-slate-200/80">
+      <p>© 2026 Atmosphere-AI Environmental IoT. Powered by Raspberry Pi, Flask, & scikit-learn.</p>
+    </footer>
+  </div>
+
+  <!-- Geolocation Permission Dialog Modal -->
+  <div id="geo-permission-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="glass-panel p-8 max-w-md w-full mx-4 flex flex-col gap-5 border border-white/20 shadow-2xl bg-white/80">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="map-pin" class="w-6 h-6 text-emerald-600"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold font-display text-slate-900">Location Access Permission</h3>
+          <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Required for local weather</span>
+        </div>
+      </div>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Atmosphere-AI would like to access your Geolocation coordinates to automatically localize air metrics, weather displays, language preferences, and unit scales.
+      </p>
+      <div class="flex items-center gap-3 mt-2">
+        <button id="geo-grant-btn" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all">
+          Grant Permission
+        </button>
+        <button id="geo-deny-btn" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-250 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 transition-all">
+          Use Defaults
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/dashboard.js"></script>
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
