@@ -7,9 +7,12 @@ load_dotenv()
 # Database setup
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "atmosphere_ai.db")
 SUPABASE_DB_URL = os.environ.get("SUPABASE_DB_URL", "")
+MYSQL_DB_URL = os.environ.get("MYSQL_DB_URL", "")
 
 # Determine database engine
-if SUPABASE_DB_URL:
+if MYSQL_DB_URL:
+    DATABASE_TYPE = "mysql"
+elif SUPABASE_DB_URL:
     DATABASE_TYPE = "postgres"
 else:
     DATABASE_TYPE = "sqlite"
