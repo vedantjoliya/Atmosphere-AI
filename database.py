@@ -9,7 +9,22 @@ def get_db_connection():
     """Establishes connection to either SQLite or PostgreSQL database based on configuration."""
     if DATABASE_TYPE == "postgres":
         import psycopg2
-        conn = psycopg2.connect(SUPABASE_DB_URL)
+        import urllib.parse
+        
+        parsed = urllib.parse.urlsplit(SUPABASE_DB_URL)
+        username = parsed.username
+        password = urllib.parse.unquote(parsed.password) if parsed.password else None
+        db_name = parsed.path[1:] if parsed.path else None
+        hostname = parsed.hostname
+        port = parsed.port
+        
+        conn = psycopg2.connect(
+            database=db_name,
+            user=username,
+            password=password,
+            host=hostname,
+            port=port
+        )
         return conn
     else:
         conn = sqlite3.connect(DATABASE_PATH)
