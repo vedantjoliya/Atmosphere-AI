@@ -121,6 +121,11 @@ SENSOR_BAUDRATE=9600
 SSH_HOST=192.168.1.242
 SSH_USER=admin
 SSH_PORT=22
+
+# Supabase PostgreSQL Connection String (Remote Database Integration)
+# Leave blank to run locally using SQLite (atmosphere_ai.db).
+SUPABASE_DB_URL=
+
 ```
 
 ### 3. Run the Application

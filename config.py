@@ -6,6 +6,13 @@ load_dotenv()
 
 # Database setup
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "atmosphere_ai.db")
+SUPABASE_DB_URL = os.environ.get("SUPABASE_DB_URL", "")
+
+# Determine database engine
+if SUPABASE_DB_URL:
+    DATABASE_TYPE = "postgres"
+else:
+    DATABASE_TYPE = "sqlite"
 
 # OpenWeatherMap Settings
 # Set this in your environment or in an .env file.
