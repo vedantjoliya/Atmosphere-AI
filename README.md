@@ -91,49 +91,43 @@ graph TD
 
 ## 🚀 Quick Setup (Local Dev)
 
-### 1. Install Python Dependencies
-Ensure you have Python 3.8+ installed. Clone the repository, create a virtual environment, and install package dependencies:
+Ensure you have Python 3.8+ installed.
+
+### 1. Clone & Automated Setup
+Clone the repository, create a virtual environment, and run the automated setup script to configure your environment:
 ```bash
+# Clone the repository
+git clone https://github.com/vedantjoliya/Atmosphere-AI.git
+cd Atmosphere-AI
+
 # Create and activate virtual environment
 python -m venv venv
 venv\Scripts\activate      # On Windows
 source venv/bin/activate   # On Unix/Linux
 
-# Install required packages
-pip install -r requirements.txt
+# Run the automated local setup script
+python setup_local.py
 ```
+*(The setup script copies `.env.example` to `.env`, installs required pip packages, and creates/seeds your local SQLite database).*
 
-### 2. Configure Local Settings
-You can copy settings directly into a `.env` file in the root directory:
+### 2. Configure Remote Integrations (Optional)
+If you want to pull data from physical sensors or host globally on Supabase, open `.env` and fill in your settings:
 ```env
-# Optional weather API key (if blank, keyless Open-Meteo is used automatically)
-OPENWEATHERMAP_API_KEY=
-
-# Default location coordinates (defaults to New York)
-DEFAULT_LAT=40.7128
-DEFAULT_LON=-74.0060
-
-# Physical PMS5003 sensor details (if connected locally)
-SENSOR_SERIAL_PORT=/dev/ttyS0
-SENSOR_BAUDRATE=9600
-
-# Remote SSH Sensor configuration (to read SDS011/PMS5003 from remote nodes)
-SSH_HOST=192.168.1.242
-SSH_USER=admin
-SSH_PORT=22
-
-# Supabase PostgreSQL Connection String (Remote Database Integration)
-# Leave blank to run locally using SQLite (atmosphere_ai.db).
+# Supabase PostgreSQL Connection String (Leave blank to use local SQLite)
 SUPABASE_DB_URL=
 
+# OpenWeatherMap API Key (Leave blank to use keyless Open-Meteo)
+OPENWEATHERMAP_API_KEY=
 ```
 
 ### 3. Run the Application
-Start the application using:
+Start the Flask development server:
 ```bash
 python app.py
 ```
 Open your browser and navigate to `http://127.0.0.1:5000/`.
+*(If no database connection string is provided, the application runs entirely in offline simulation mode, allowing zero-configuration testing).*
+
 
 ---
 

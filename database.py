@@ -3,30 +3,11 @@ import datetime
 import math
 import random
 import os
-from config import DATABASE_PATH, SUPABASE_DB_URL, MYSQL_DB_URL, DATABASE_TYPE
+from config import DATABASE_PATH, SUPABASE_DB_URL, DATABASE_TYPE
 
 def get_db_connection():
-    """Establishes connection to either SQLite, PostgreSQL, or MySQL database based on configuration."""
-    if DATABASE_TYPE == "mysql":
-        import pymysql
-        import urllib.parse
-        
-        parsed = urllib.parse.urlsplit(MYSQL_DB_URL)
-        username = parsed.username
-        password = urllib.parse.unquote(parsed.password) if parsed.password else None
-        db_name = parsed.path[1:] if parsed.path else None
-        hostname = parsed.hostname
-        port = parsed.port or 3306
-        
-        conn = pymysql.connect(
-            host=hostname,
-            user=username,
-            password=password,
-            database=db_name,
-            port=port
-        )
-        return conn
-    elif DATABASE_TYPE == "postgres":
+    """Establishes connection to either SQLite or PostgreSQL database based on configuration."""
+    if DATABASE_TYPE == "postgres":
         import pg8000.dbapi
         import urllib.parse
         
@@ -35,6 +16,8 @@ def get_db_connection():
         password = urllib.parse.unquote(parsed.password) if parsed.password else None
         db_name = parsed.path[1:] if parsed.path else None
         hostname = parsed.hostname
+        port = parsed.port
+        
         port = parsed.port or 5432
         
         conn = pg8000.dbapi.connect(
@@ -54,13 +37,8 @@ def get_cursor(conn):
     return conn.cursor()
 
 # Dynamic query formatting based on engine
-PLACEHOLDER = "%s" if DATABASE_TYPE in ("postgres", "mysql") else "?"
-if DATABASE_TYPE == "postgres":
-    PRIMARY_KEY_AUTO = "SERIAL PRIMARY KEY"
-elif DATABASE_TYPE == "mysql":
-    PRIMARY_KEY_AUTO = "INT AUTO_INCREMENT PRIMARY KEY"
-else:
-    PRIMARY_KEY_AUTO = "INTEGER PRIMARY KEY AUTOINCREMENT"
+PLACEHOLDER = "%s" if DATABASE_TYPE == "postgres" else "?"
+PRIMARY_KEY_AUTO = "SERIAL PRIMARY KEY" if DATABASE_TYPE == "postgres" else "INTEGER PRIMARY KEY AUTOINCREMENT"
 
 def init_db():
     """Initializes the SQLite/PostgreSQL database and seeds historical data if empty."""
